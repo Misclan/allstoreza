@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: >
+  AllstoreZA – Frontend Stack (us-east-1 / N. Virginia)
+  AWS Amplify hosting — Amplify is not available in af-south-1.
+  Deploy AFTER template-backend.yaml and pass the Lambda URL as a parameter.
+
+Parameters:
+  AppName:
+    Type: String
+    Default: allstoreza
+
+  GitHubRepoUrl:
+    Type: String
+    Description: e.g. https://github.com/your-username/allstorez
+
+  GitHubBranch:
+    Type: String
+    Default: main
+
+  AmplifyAccessToken:
+    Type: String
+    NoEcho: true
+    Description: GitHub personal access token with repo scope
+
+  LambdaUrl:
+    Type: String
+    Description: >
+      TryOnFunctionUrl output from the backend stack (template-backend.yaml).
+      e.g. https://xxxx.lambda-url.af-south-1.on.aws/
+
+Conditions:
+  HasToken: !Not [!Equals [!Ref AmplifyAccessToken, '']]
+
+Resources:
+
+  AmplifyApp:
+    Type: AWS::Amplify::App
+    Condition: HasToken
+    Properties:
+      Name: !Sub '${AppName}-frontend'
+      Repository: !Ref GitHubRepoUrl
+      AccessToken: !Ref AmplifyAccessToken
+      BuildSpec: |
+        version: 1
+        frontend:
+          phases:
+            preBuild:
+              commands:
+                - npm ci
+            build:
+              commands:
+                - npm run build
+          artifacts:
+            baseDirectory: dist
+            files:
+              - '**/*'
+          cache:
+            paths:
+              - node_modules/**/*
+      EnvironmentVariables:
+        - Name: VITE_TRYON_LAMBDA_URL
+          Value: !Ref LambdaUrl
+      CustomRules:
+        - Source: '</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>'
+          Target: /index.html
+          Status: '200'
+
+  AmplifyBranch:
+    Type: AWS::Amplify::Branch
+    Condition: HasToken
+    Properties:
+      AppId: !GetAtt AmplifyApp.AppId
+      BranchName: !Ref GitHubBranch
+      EnableAutoBuild: true
+      Stage: PRODUCTION
+
+Outputs:
+  AmplifyAppUrl:
+    Condition: HasToken
+    Description: >
+      Your live app URL. After first deploy, go back and update the backend
+      stack with AllowedOrigin set to this URL to lock down Lambda CORS.
+    Value: !Sub 'https://${GitHubBranch}.${AmplifyApp.DefaultDomain}'
+    Export:
+      Name: !Sub '${AppName}-AppUrl'
+
+  AmplifyAppId:
+    Condition: HasToken
+    Value: !GetAtt AmplifyApp.AppId

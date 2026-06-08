@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  AllstoreZA – Backend Stack (af-south-1 / Cape Town)
+  Lambda try-on engine + DynamoDB tables
+  Deploy this first, grab TryOnFunctionUrl from outputs, then deploy template-frontend.yaml
+
+Parameters:
+  AppName:
+    Type: String
+    Default: allstoreza
+
+  HuggingFaceUrl:
+    Type: String
+    Default: https://yisol-idm-vton.hf.space/--replicas/0/api/predict
+
+  AllowedOrigin:
+    Type: String
+    Default: '*'
+    Description: >
+      Set to your Amplify app URL after frontend deploy to lock down CORS.
+      e.g. https://main.abcdef.amplifyapp.com
+      Leave as * for initial deploy.
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    Timeout: 30
+    MemorySize: 256
+
+Resources:
+
+  TryOnFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AppName}-tryon'
+      Handler: tryon.handler
+      CodeUri: lambda/
+      Description: Proxies garment try-on requests to Hugging Face IDM-VTON
+      Environment:
+        Variables:
+          HF_TRYON_URL: !Ref HuggingFaceUrl
+          ALLOWED_ORIGIN: !Ref AllowedOrigin
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowCredentials: false
+          AllowHeaders:
+            - Content-Type
+          AllowMethods:
+            - '*'
+          AllowOrigins:
+            - !Ref AllowedOrigin
+          MaxAge: 86400
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AppName}-users'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  WardrobeTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AppName}-wardrobe'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: itemId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: itemId
+          KeyType: HASH
+        - AttributeName: userId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: userId-index
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  CatalogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AppName}-catalog'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: itemId
+          AttributeType: S
+        - AttributeName: storeSlug
+          AttributeType: S
+      KeySchema:
+        - AttributeName: itemId
+          KeyType: HASH
+        - AttributeName: storeSlug
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: storeSlug-index
+          KeySchema:
+            - AttributeName: storeSlug
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  StoresTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AppName}-stores'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: storeId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: storeId
+          KeyType: HASH
+
+Outputs:
+  TryOnFunctionUrl:
+    Description: >
+      Paste this as VITE_TRYON_LAMBDA_URL when deploying the frontend stack,
+      and also pass it as LambdaUrl parameter to template-frontend.yaml
+    Value: !GetAtt TryOnFunctionUrl.FunctionUrl
+    Export:
+      Name: !Sub '${AppName}-TryOnUrl'
+
+  UsersTableName:
+    Value: !Ref UsersTable
+    Export:
+      Name: !Sub '${AppName}-UsersTable'
+
+  WardrobeTableName:
+    Value: !Ref WardrobeTable
+    Export:
+      Name: !Sub '${AppName}-WardrobeTable'
+
+  CatalogTableName:
+    Value: !Ref CatalogTable
+    Export:
+      Name: !Sub '${AppName}-CatalogTable'
+
+  StoresTableName:
+    Value: !Ref StoresTable
+    Export:
+      Name: !Sub '${AppName}-StoresTable'

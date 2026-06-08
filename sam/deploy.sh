@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# AllstoreZA – SAM deploy helper
+# AllstoreZA – Two-stack deploy script
+#
 # Usage:
-#   ./deploy.sh           → guided first deploy (prompts for GitHub token etc.)
-#   ./deploy.sh --update  → fast redeploy with existing samconfig.toml values
+#   ./deploy.sh             → full guided deploy (backend then frontend)
+#   ./deploy.sh --backend   → backend only (af-south-1)
+#   ./deploy.sh --frontend  → frontend only (us-east-1)
+#   ./deploy.sh --update    → redeploy both with existing values
 
 set -e
 
@@ -10,91 +13,144 @@ SAM_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SAM_DIR"
 
 echo ""
-echo "  ╔═══════════════════════════════╗"
-echo "  ║   AllstoreZA – SAM Deploy     ║"
-echo "  ╚═══════════════════════════════╝"
+echo "  ╔══════════════════════════════════════╗"
+echo "  ║   AllstoreZA – SAM Deploy            ║"
+echo "  ║   Backend  → af-south-1 (Cape Town)  ║"
+echo "  ║   Frontend → us-east-1 (N. Virginia) ║"
+echo "  ╚══════════════════════════════════════╝"
 echo ""
 
-# Check SAM CLI is installed
+# ── Preflight ─────────────────────────────────────────────────────────────────
 if ! command -v sam &>/dev/null; then
-  echo "  ✗ SAM CLI not found."
-  echo "  Install: pip install aws-sam-cli"
-  echo "  Docs: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html"
+  echo "  ✗ SAM CLI not found. Install: pip install aws-sam-cli"
   exit 1
 fi
 
-# Check AWS credentials are configured
 if ! aws sts get-caller-identity &>/dev/null; then
-  echo "  ✗ AWS credentials not configured."
-  echo "  Run: aws configure"
+  echo "  ✗ AWS credentials not configured. Run: aws configure"
   exit 1
 fi
 
-echo "  ✓ SAM CLI found: $(sam --version)"
+echo "  ✓ SAM CLI: $(sam --version)"
 echo "  ✓ AWS identity: $(aws sts get-caller-identity --query Arn --output text)"
 echo ""
 
-if [[ "$1" == "--update" ]]; then
-  echo "  → Fast redeploy (using samconfig.toml values)..."
-  sam build && sam deploy
+# ── Backend deploy (af-south-1) ───────────────────────────────────────────────
+deploy_backend() {
+  local allowed_origin="${1:-*}"
+
+  echo "  ── Backend: building (template-backend.yaml) ──"
+  sam build \
+    --template-file template-backend.yaml \
+    --build-dir .aws-sam/build-backend
+
+  echo "  ── Backend: deploying to af-south-1 ──"
+  sam deploy \
+    --template-file .aws-sam/build-backend/template.yaml \
+    --stack-name allstoreza-backend \
+    --region af-south-1 \
+    --capabilities CAPABILITY_IAM \
+    --resolve-s3 \
+    --no-confirm-changeset \
+    --no-fail-on-empty-changeset \
+    --parameter-overrides \
+      "AppName=allstoreza AllowedOrigin=${allowed_origin}"
+
+  LAMBDA_URL=$(aws cloudformation describe-stacks \
+    --stack-name allstoreza-backend \
+    --region af-south-1 \
+    --query 'Stacks[0].Outputs[?OutputKey==`TryOnFunctionUrl`].OutputValue' \
+    --output text)
+
   echo ""
-  echo "  ✓ Done. Outputs:"
-  aws cloudformation describe-stacks \
-    --stack-name allstoreza \
-    --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-    --output table
+  echo "  ✓ Backend deployed."
+  echo "  ✓ Lambda URL: $LAMBDA_URL"
+  echo ""
+  echo "$LAMBDA_URL"
+}
+
+# ── Frontend deploy (us-east-1) ───────────────────────────────────────────────
+deploy_frontend() {
+  local lambda_url="$1"
+
+  if [[ -z "$lambda_url" ]]; then
+    read -r -p "  Paste your Lambda Function URL: " lambda_url
+  fi
+
+  read -r -p "  GitHub repo URL (e.g. https://github.com/username/allstorez): " REPO_URL
+  read -r -s -p "  GitHub access token (repo scope, input hidden): " GH_TOKEN
+  echo ""
+  echo ""
+
+  echo "  ── Frontend: building (template-frontend.yaml) ──"
+  sam build \
+    --template-file template-frontend.yaml \
+    --build-dir .aws-sam/build-frontend
+
+  echo "  ── Frontend: deploying to us-east-1 ──"
+  sam deploy \
+    --template-file .aws-sam/build-frontend/template.yaml \
+    --stack-name allstoreza-frontend \
+    --region us-east-1 \
+    --capabilities CAPABILITY_IAM \
+    --resolve-s3 \
+    --no-confirm-changeset \
+    --no-fail-on-empty-changeset \
+    --parameter-overrides \
+      "AppName=allstoreza GitHubBranch=main GitHubRepoUrl=${REPO_URL} AmplifyAccessToken=${GH_TOKEN} LambdaUrl=${lambda_url}"
+
+  APP_URL=$(aws cloudformation describe-stacks \
+    --stack-name allstoreza-frontend \
+    --region us-east-1 \
+    --query 'Stacks[0].Outputs[?OutputKey==`AmplifyAppUrl`].OutputValue' \
+    --output text)
+
+  echo ""
+  echo "  ✓ Frontend deployed: $APP_URL"
+  echo ""
+  echo "$APP_URL"
+}
+
+# ── Handlers ──────────────────────────────────────────────────────────────────
+
+if [[ "$1" == "--backend" ]]; then
+  deploy_backend "*"
   exit 0
 fi
 
-# Guided first deploy
-echo "  First-time deploy. You'll need:"
-echo "  1. Your GitHub repo URL"
-echo "  2. A GitHub personal access token (repo scope)"
-echo "     → https://github.com/settings/tokens/new?scopes=repo"
-echo ""
-
-read -r -p "  GitHub repo URL (e.g. https://github.com/username/allstorez): " REPO_URL
-read -r -s -p "  GitHub access token (input hidden): " GH_TOKEN
-echo ""
-echo ""
-
-# Validate inputs
-if [[ -z "$REPO_URL" || -z "$GH_TOKEN" ]]; then
-  echo "  ⚠  Repo URL and token are required for Amplify auto-deploy."
-  echo "  You can re-run with these filled in, or deploy Lambda+DynamoDB now"
-  echo "  and wire Amplify manually afterwards."
-  read -r -p "  Continue without Amplify? (y/N): " SKIP_AMPLIFY
-  if [[ "$SKIP_AMPLIFY" != "y" && "$SKIP_AMPLIFY" != "Y" ]]; then
-    exit 1
-  fi
-  OVERRIDES="AppName=allstoreza GitHubBranch=main"
-else
-  OVERRIDES="AppName=allstoreza GitHubRepoUrl=${REPO_URL} AmplifyAccessToken=${GH_TOKEN} GitHubBranch=main"
+if [[ "$1" == "--frontend" ]]; then
+  deploy_frontend ""
+  exit 0
 fi
 
-echo "  Building..."
-sam build
+if [[ "$1" == "--update" ]]; then
+  echo "  → Redeploying backend..."
+  LAMBDA_URL=$(deploy_backend "*")
+  echo "  → Redeploying frontend..."
+  deploy_frontend "$LAMBDA_URL"
+  exit 0
+fi
 
-echo ""
-echo "  Deploying to af-south-1 (Cape Town)..."
-sam deploy \
-  --stack-name allstoreza \
-  --region af-south-1 \
-  --capabilities CAPABILITY_IAM \
-  --resolve-s3 \
-  --parameter-overrides $OVERRIDES \
-  --confirm-changeset false
+# ── Full guided deploy ────────────────────────────────────────────────────────
+echo "  Step 1 of 2: Backend (Lambda + DynamoDB)"
+LAMBDA_URL=$(deploy_backend "*")
 
-echo ""
-echo "  ✓ Stack deployed. Outputs:"
-aws cloudformation describe-stacks \
-  --stack-name allstoreza \
-  --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-  --output table
+echo "  Step 2 of 2: Frontend (Amplify)"
+APP_URL=$(deploy_frontend "$LAMBDA_URL")
 
+# Lock CORS now that we have the Amplify URL
+echo "  → Locking Lambda CORS to $APP_URL ..."
+deploy_backend "$APP_URL" > /dev/null
+
+echo "  ════════════════════════════════════════"
+echo "  ✓ AllstoreZA fully deployed"
+echo "  App:    $APP_URL"
+echo "  Lambda: $LAMBDA_URL"
+echo "  ════════════════════════════════════════"
 echo ""
-echo "  Next steps:"
-echo "  1. Copy TryOnFunctionUrl output above"
-echo "  2. If you skipped Amplify: add VITE_TRYON_LAMBDA_URL in Amplify console"
-echo "  3. Trigger a build in Amplify Console or push a commit"
+echo "  Push any commit to main → Amplify auto-builds."
+echo ""
+echo "  To tear down:"
+echo "    aws cloudformation delete-stack --stack-name allstoreza-backend --region af-south-1"
+echo "    aws cloudformation delete-stack --stack-name allstoreza-frontend --region us-east-1"
 echo ""
