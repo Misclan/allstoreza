@@ -6,6 +6,6 @@ const userProfile = {
   // Full-body African woman, plain background, standing pose
   // NOTE: For production, host your own model photo on S3 for full control
   // Upload via the camera icon in the app to override this default
-  avatarCanvasUrl: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=max&h=900&q=85',
+  avatarCanvasUrl: 'https://allstoreza.s3.us-east-1.amazonaws.com/assets/fullbodi.png',
 };
 export default userProfile;
