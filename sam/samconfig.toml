@@ -1,0 +1,20 @@
+# AllstoreZA – SAM deploy config
+# Run `sam deploy` from the /sam directory and it picks this up automatically.
+
+version = 0.1
+
+[default.global.parameters]
+stack_name = "allstoreza"
+region = "af-south-1"       # Cape Town — closest to SA users
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true           # SAM auto-creates a deployment bucket
+
+[default.deploy.parameters]
+parameter_overrides = [
+  "AppName=allstoreza",
+  "GitHubBranch=main",
+  # Fill these in before first deploy:
+  # "GitHubRepoUrl=https://github.com/YOUR_USERNAME/allstorez",
+  # "AmplifyAccessToken=ghp_YOUR_TOKEN_HERE",
+]

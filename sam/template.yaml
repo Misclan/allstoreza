@@ -1,0 +1,230 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  AllstoreZA – AI Virtual Try-On Stack
+  Lambda (try-on engine) + DynamoDB (4 tables) + Amplify (frontend hosting)
+  Everything on free tier at MVP scale.
+
+# ── PARAMETERS ────────────────────────────────────────────────────────────────
+Parameters:
+  AppName:
+    Type: String
+    Default: allstoreza
+
+  HuggingFaceUrl:
+    Type: String
+    Default: https://yisol-idm-vton.hf.space/--replicas/0/api/predict
+
+  GitHubRepoUrl:
+    Type: String
+    Default: ''
+    Description: >
+      Full HTTPS URL of your GitHub repo
+      e.g. https://github.com/your-username/allstorez
+
+  GitHubBranch:
+    Type: String
+    Default: main
+
+  AmplifyAccessToken:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: >
+      GitHub personal access token (repo scope) for Amplify to pull your repo.
+      Leave blank to wire Amplify manually after deploy.
+
+# ── GLOBALS ───────────────────────────────────────────────────────────────────
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    Timeout: 30
+    MemorySize: 256
+
+# ── RESOURCES ─────────────────────────────────────────────────────────────────
+Resources:
+
+  # ── LAMBDA: Try-On Engine ──────────────────────────────────────────────────
+  TryOnFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AppName}-tryon'
+      Handler: tryon.handler
+      CodeUri: lambda/
+      Description: Proxies garment try-on requests to Hugging Face IDM-VTON
+      Environment:
+        Variables:
+          HF_TRYON_URL: !Ref HuggingFaceUrl
+          # ALLOWED_ORIGIN is set post-deploy via a separate update
+          # to avoid the circular dependency with AmplifyApp
+          ALLOWED_ORIGIN: '*'
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowCredentials: false
+          AllowHeaders:
+            - Content-Type
+          AllowMethods:
+            - '*'
+          AllowOrigins:
+            - '*'
+          MaxAge: 86400
+
+  # ── DYNAMODB TABLES ────────────────────────────────────────────────────────
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AppName}-users'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  WardrobeTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AppName}-wardrobe'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: itemId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: itemId
+          KeyType: HASH
+        - AttributeName: userId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: userId-index
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  CatalogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AppName}-catalog'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: itemId
+          AttributeType: S
+        - AttributeName: storeSlug
+          AttributeType: S
+      KeySchema:
+        - AttributeName: itemId
+          KeyType: HASH
+        - AttributeName: storeSlug
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: storeSlug-index
+          KeySchema:
+            - AttributeName: storeSlug
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  StoresTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AppName}-stores'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: storeId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: storeId
+          KeyType: HASH
+
+  # ── AMPLIFY APP ────────────────────────────────────────────────────────────
+  # Condition: only created when GitHubRepoUrl + AmplifyAccessToken are provided
+  AmplifyApp:
+    Type: AWS::Amplify::App
+    Condition: HasAmplifyToken
+    Properties:
+      Name: !Sub '${AppName}-frontend'
+      Repository: !Ref GitHubRepoUrl
+      AccessToken: !Ref AmplifyAccessToken
+      BuildSpec: |
+        version: 1
+        frontend:
+          phases:
+            preBuild:
+              commands:
+                - npm ci
+            build:
+              commands:
+                - npm run build
+          artifacts:
+            baseDirectory: dist
+            files:
+              - '**/*'
+          cache:
+            paths:
+              - node_modules/**/*
+      # VITE_TRYON_LAMBDA_URL is injected here at deploy time from the Lambda output
+      EnvironmentVariables:
+        - Name: VITE_TRYON_LAMBDA_URL
+          Value: !GetAtt TryOnFunctionUrl.FunctionUrl
+      CustomRules:
+        # SPA catch-all — all paths serve index.html
+        - Source: '</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>'
+          Target: /index.html
+          Status: '200'
+
+  AmplifyBranch:
+    Type: AWS::Amplify::Branch
+    Condition: HasAmplifyToken
+    Properties:
+      AppId: !GetAtt AmplifyApp.AppId
+      BranchName: !Ref GitHubBranch
+      EnableAutoBuild: true
+      Stage: PRODUCTION
+
+# ── CONDITIONS ────────────────────────────────────────────────────────────────
+Conditions:
+  HasAmplifyToken:
+    !Not [!Equals [!Ref AmplifyAccessToken, '']]
+
+# ── OUTPUTS ───────────────────────────────────────────────────────────────────
+Outputs:
+  TryOnFunctionUrl:
+    Description: Lambda Function URL — set as VITE_TRYON_LAMBDA_URL in Amplify if wiring manually
+    Value: !GetAtt TryOnFunctionUrl.FunctionUrl
+    Export:
+      Name: !Sub '${AppName}-TryOnUrl'
+
+  AmplifyAppUrl:
+    Condition: HasAmplifyToken
+    Description: Live app URL
+    Value: !Sub 'https://${GitHubBranch}.${AmplifyApp.DefaultDomain}'
+    Export:
+      Name: !Sub '${AppName}-AppUrl'
+
+  UsersTableName:
+    Value: !Ref UsersTable
+    Export:
+      Name: !Sub '${AppName}-UsersTable'
+
+  WardrobeTableName:
+    Value: !Ref WardrobeTable
+    Export:
+      Name: !Sub '${AppName}-WardrobeTable'
+
+  CatalogTableName:
+    Value: !Ref CatalogTable
+    Export:
+      Name: !Sub '${AppName}-CatalogTable'
+
+  StoresTableName:
+    Value: !Ref StoresTable
+    Export:
+      Name: !Sub '${AppName}-StoresTable'

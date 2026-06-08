@@ -1,0 +1,18 @@
+# AWS Amplify build spec for AllstoreZA
+# Hosting: Amplify Console (free tier: 100GB transfer, 1000 build minutes/month)
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
