@@ -25,7 +25,11 @@ pip install aws-sam-cli
 **3. GitHub personal access token**
 - Go to: https://github.com/settings/tokens/new?scopes=repo
 - Scope: `repo`
-- Copy the token — you'll paste it during deploy
+- Copy the token — you'll paste it during deploy - 
+
+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
+https://github.com/Misclan/allstoreza.git
+https://lllrsbvp5bksga6rqa4lyr6raq0jnjsc.lambda-url.af-south-1.on.aws/
 
 ---
 

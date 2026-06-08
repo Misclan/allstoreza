@@ -1,99 +1,106 @@
 import { useState } from 'react';
 
-const TILE_OPTIONS = [
-  { key: 'isHotDeal', label: 'Hot Deals' },
-  { key: 'isNew', label: 'New In' },
-  { key: 'isTrending', label: 'Trending' },
+const SECTIONS = [
+  { key: 'isHotDeal', label: 'Hot Deals', icon: '🔥' },
+  { key: 'isNew',     label: 'New In',    icon: '✨' },
+  { key: 'isTrending',label: 'Trending',  icon: '↑' },
 ];
 
-export default function StoreBrowser({ store, items, onTryOn, selectedItems, onClose }) {
-  const [tileFilter, setTileFilter] = useState({ isHotDeal: true, isNew: true, isTrending: true });
-  const [configOpen, setConfigOpen] = useState(false);
+const BackIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6"/>
+  </svg>
+);
 
-  const featured = items.filter((item) =>
-    Object.entries(tileFilter).some(([k, v]) => v && item[k])
-  ).slice(0, 4);
+const ExternalIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+  </svg>
+);
 
-  const rest = items.filter((item) => !featured.includes(item));
+export default function StoreBrowser({ store, items, activeTileFilter, onTryOn, selectedItems, onClose }) {
+  // Sections to show: respect the tile filter the user had configured
+  const activeFilters = activeTileFilter
+    ? SECTIONS.filter(s => activeTileFilter[s.key])
+    : SECTIONS;
+
+  // Build section groups
+  const sections = activeFilters
+    .map(s => ({ ...s, items: items.filter(i => i[s.key]) }))
+    .filter(s => s.items.length > 0);
+
+  // All items (for the full grid at the bottom)
+  const allItems = items;
 
   return (
     <div className="store-browser">
+
       {/* Header */}
       <div className="sb-header">
         <div className="sb-title-row">
-          <button className="icon-btn" onClick={onClose} type="button" aria-label="Back">
-            ← Back
+          <button type="button" className="sb-back-btn icon-btn" onClick={onClose} aria-label="Back to catalog">
+            <BackIcon /> Back
           </button>
           <h2 className="sb-store-name">{store?.name}</h2>
-          <a href={store?.storeUrl} target="_blank" rel="noreferrer" className="button-link sb-visit">
-            Visit website ↗
+          <a
+            href={store?.storeUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="button-link sb-visit"
+            onClick={e => e.stopPropagation()}
+          >
+            Visit store <ExternalIcon />
           </a>
         </div>
-        <p className="sb-sub">Items from <strong>{store?.name}</strong> — click "Try it on" to layer onto your avatar.</p>
+        <p className="sb-sub">
+          Click <strong>Try it on</strong> to layer onto your avatar. Use <strong>Visit store</strong> for the full catalog.
+        </p>
       </div>
 
-      {/* Featured carousel */}
-      {featured.length > 0 && (
-        <div className="sb-featured-section">
-          <div className="sb-featured-header">
-            <span className="section-heading" style={{ margin: 0 }}>Featured</span>
-            <div style={{ position: 'relative' }}>
-              <button
-                type="button"
-                className="icon-btn config-pencil"
-                onClick={() => setConfigOpen((v) => !v)}
-                title="Configure tiles"
-              >
-                ✏️
-              </button>
-              {configOpen && (
-                <div className="tile-config-popover" onClick={(e) => e.stopPropagation()}>
-                  <p className="tile-config-title">Show tiles for:</p>
-                  {TILE_OPTIONS.map(({ key, label }) => (
-                    <label key={key} className="tile-config-row">
-                      <input
-                        type="checkbox"
-                        checked={!!tileFilter[key]}
-                        onChange={() =>
-                          setTileFilter((prev) => ({ ...prev, [key]: !prev[key] }))
-                        }
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+      {/* Per-filter sections — each a horizontal scrollable carousel */}
+      {sections.map(section => (
+        <div key={section.key} className="sb-section">
+          <div className="sb-section-header">
+            <span className="sb-section-icon">{section.icon}</span>
+            <h3 className="sb-section-title">{section.label}</h3>
+            <span className="sb-section-count">{section.items.length} items</span>
           </div>
           <div className="sb-carousel">
-            {featured.map((item) => (
-              <FeaturedCard key={item.id} item={item} onTryOn={onTryOn} selectedItems={selectedItems} />
+            {section.items.map(item => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                isSelected={selectedItems.some(s => s.id === item.id)}
+                onTryOn={onTryOn}
+              />
             ))}
           </div>
         </div>
-      )}
+      ))}
 
-      {/* All items */}
-      <div className="sb-all-section">
-        <h3 className="section-heading">All items</h3>
-        <div className="store-grid">
-          {items.map((item) => (
-            <article key={item.id} className="item-card">
+      {/* All items grid */}
+      <div className="sb-section">
+        <div className="sb-section-header">
+          <h3 className="sb-section-title">All items</h3>
+          <span className="sb-section-count">{allItems.length} items</span>
+        </div>
+        <div className="sb-all-grid">
+          {allItems.map(item => (
+            <article key={item.id} className={`sb-grid-card ${selectedItems.some(s => s.id === item.id) ? 'sb-grid-card-active' : ''}`}>
               <img src={item.productImageUrl} alt={item.title} />
-              <div>
-                <h3>{item.title}</h3>
-                <p>{item.layerType.replace('_', ' ')}</p>
-                <p className="keyword">R{item.priceZAR.toFixed(2)}</p>
+              <div className="sb-grid-info">
+                <span className="sb-grid-title">{item.title}</span>
+                <span className="sb-grid-layer">{item.layerType.replace(/_/g, ' ')}</span>
+                <span className="sb-grid-price">R{item.priceZAR.toFixed(2)}</span>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button
-                  className={`button ${selectedItems.some(s => s.id === item.id) ? 'button-active' : ''}`}
-                  type="button"
-                  onClick={() => onTryOn(item)}
-                >
-                  {selectedItems.some(s => s.id === item.id) ? '✓ On' : 'Try it on'}
-                </button>
-              </div>
+              <button
+                type="button"
+                className={`button ${selectedItems.some(s => s.id === item.id) ? 'button-active' : ''}`}
+                onClick={() => onTryOn(item)}
+              >
+                {selectedItems.some(s => s.id === item.id) ? '✓ On' : 'Try it on'}
+              </button>
             </article>
           ))}
         </div>
@@ -102,18 +109,17 @@ export default function StoreBrowser({ store, items, onTryOn, selectedItems, onC
   );
 }
 
-function FeaturedCard({ item, onTryOn, selectedItems }) {
-  const isSelected = selectedItems.some(s => s.id === item.id);
+function ItemCard({ item, isSelected, onTryOn }) {
   return (
-    <div className="featured-card">
+    <div className={`sb-card ${isSelected ? 'sb-card-active' : ''}`}>
       <img src={item.productImageUrl} alt={item.title} />
-      <div className="featured-card-info">
-        <span className="featured-card-name">{item.title}</span>
-        <span className="featured-card-price">R{item.priceZAR.toFixed(2)}</span>
+      <div className="sb-card-info">
+        <span className="sb-card-name">{item.title}</span>
+        <span className="sb-card-price">R{item.priceZAR.toFixed(2)}</span>
       </div>
       <button
         type="button"
-        className={`button featured-try-btn ${isSelected ? 'button-active' : ''}`}
+        className={`button sb-card-btn ${isSelected ? 'button-active' : ''}`}
         onClick={() => onTryOn(item)}
       >
         {isSelected ? '✓ Added' : 'Try it on'}
