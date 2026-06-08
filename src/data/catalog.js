@@ -1,31 +1,4 @@
-// 4 items per active store — single flat-lay garment images only
 const retailCatalog = [
-  // ── ZARA ──────────────────────────────────────────────────────────────────
-  {
-    id: 'zara_blazer_01', storeName: 'Zara', storeSlug: 'zara',
-    title: 'Tailored Blazer', priceZAR: 1299, layerType: 'outer_body',
-    productImageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=max&w=400&q=80',
-    affiliateCheckoutUrl: 'https://www.zara.com/za/', isHotDeal: true, isNew: false, isTrending: true,
-  },
-  {
-    id: 'zara_shirt_02', storeName: 'Zara', storeSlug: 'zara',
-    title: 'Linen Stripe Shirt', priceZAR: 649, layerType: 'inner_body',
-    productImageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=max&w=400&q=80',
-    affiliateCheckoutUrl: 'https://www.zara.com/za/', isHotDeal: false, isNew: true, isTrending: false,
-  },
-  {
-    id: 'zara_trouser_03', storeName: 'Zara', storeSlug: 'zara',
-    title: 'High-Waist Trousers', priceZAR: 849, layerType: 'lower_body',
-    productImageUrl: 'https://images.unsplash.com/photo-1624378440082-c5ff2e97b555?auto=format&fit=max&w=400&q=80',
-    affiliateCheckoutUrl: 'https://www.zara.com/za/', isHotDeal: true, isNew: false, isTrending: true,
-  },
-  {
-    id: 'zara_dress_04', storeName: 'Zara', storeSlug: 'zara',
-    title: 'Satin Slip Dress', priceZAR: 999, layerType: 'full_body',
-    productImageUrl: 'https://images.unsplash.com/photo-1572804013427-4d7ca7268217?auto=format&fit=max&w=400&q=80',
-    affiliateCheckoutUrl: 'https://www.zara.com/za/', isHotDeal: false, isNew: true, isTrending: true,
-  },
-
   // ── COTTON ON ─────────────────────────────────────────────────────────────
   {
     id: 'cottonon_tee_01', storeName: 'Cotton On', storeSlug: 'cottonon',
@@ -40,42 +13,42 @@ const retailCatalog = [
     affiliateCheckoutUrl: 'https://cottonon.com/za/', isHotDeal: true, isNew: false, isTrending: true,
   },
   {
-    id: 'cottonon_polo_03', storeName: 'Cotton On', storeSlug: 'cottonon',
-    title: 'Classic White Polo', priceZAR: 299, layerType: 'inner_body',
-    productImageUrl: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?auto=format&fit=max&w=400&q=80',
+    id: 'cottonon_white_tee_03', storeName: 'Cotton On', storeSlug: 'cottonon',
+    title: 'Classic White Tee', priceZAR: 199, layerType: 'inner_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=max&w=400&q=80',
     affiliateCheckoutUrl: 'https://cottonon.com/za/', isHotDeal: false, isNew: true, isTrending: false,
   },
   {
     id: 'cottonon_cap_04', storeName: 'Cotton On', storeSlug: 'cottonon',
-    title: 'Washed Baseball Cap', priceZAR: 179, layerType: 'accessory',
+    title: 'Washed Baseball Cap', priceZAR: 179, layerType: 'hat',
     productImageUrl: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=max&w=400&q=80',
     affiliateCheckoutUrl: 'https://cottonon.com/za/', isHotDeal: true, isNew: false, isTrending: true,
   },
 
-  // ── WOOLWORTHS ────────────────────────────────────────────────────────────
+  // ── EDGARS ────────────────────────────────────────────────────────────────
   {
-    id: 'woolworths_denim_01', storeName: 'Woolworths', storeSlug: 'woolworths',
-    title: 'Classic Stretch Denim', priceZAR: 599, layerType: 'lower_body',
-    productImageUrl: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=max&w=400&q=80',
-    affiliateCheckoutUrl: 'https://woolworths.co.za/', isHotDeal: false, isNew: false, isTrending: true,
+    id: 'edgars_wrap_dress_01', storeName: 'Edgars', storeSlug: 'edgars',
+    title: 'Floral Wrap Dress', priceZAR: 699, layerType: 'full_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1572804013427-4d7ca7268217?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://edgars.co.za/', isHotDeal: false, isNew: true, isTrending: false,
   },
   {
-    id: 'woolworths_chino_02', storeName: 'Woolworths', storeSlug: 'woolworths',
-    title: 'Slim Fit Chino', priceZAR: 499, layerType: 'lower_body',
-    productImageUrl: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=max&w=400&q=80',
-    affiliateCheckoutUrl: 'https://woolworths.co.za/', isHotDeal: true, isNew: false, isTrending: false,
-  },
-  {
-    id: 'woolworths_skirt_03', storeName: 'Woolworths', storeSlug: 'woolworths',
+    id: 'edgars_skirt_02', storeName: 'Edgars', storeSlug: 'edgars',
     title: 'Pencil Midi Skirt', priceZAR: 549, layerType: 'lower_body',
     productImageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5974ca5596?auto=format&fit=max&w=400&q=80',
-    affiliateCheckoutUrl: 'https://woolworths.co.za/', isHotDeal: false, isNew: true, isTrending: true,
+    affiliateCheckoutUrl: 'https://edgars.co.za/', isHotDeal: true, isNew: false, isTrending: true,
   },
   {
-    id: 'woolworths_belt_04', storeName: 'Woolworths', storeSlug: 'woolworths',
-    title: 'Leather Belt', priceZAR: 199, layerType: 'accessory',
-    productImageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=max&w=400&q=80',
-    affiliateCheckoutUrl: 'https://woolworths.co.za/', isHotDeal: true, isNew: true, isTrending: false,
+    id: 'edgars_blazer_03', storeName: 'Edgars', storeSlug: 'edgars',
+    title: 'Double-Breasted Blazer', priceZAR: 999, layerType: 'outer_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://edgars.co.za/', isHotDeal: false, isNew: true, isTrending: true,
+  },
+  {
+    id: 'edgars_bag_04', storeName: 'Edgars', storeSlug: 'edgars',
+    title: 'Structured Tote Bag', priceZAR: 499, layerType: 'handbag',
+    productImageUrl: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://edgars.co.za/', isHotDeal: true, isNew: true, isTrending: false,
   },
 
   // ── JET ───────────────────────────────────────────────────────────────────
@@ -128,6 +101,58 @@ const retailCatalog = [
     title: 'Fleece Jogger Pants', priceZAR: 299, layerType: 'lower_body',
     productImageUrl: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?auto=format&fit=max&w=400&q=80',
     affiliateCheckoutUrl: 'https://mrpricefashion.com/', isHotDeal: true, isNew: false, isTrending: true,
+  },
+
+  // ── WOOLWORTHS ────────────────────────────────────────────────────────────
+  {
+    id: 'woolworths_denim_01', storeName: 'Woolworths', storeSlug: 'woolworths',
+    title: 'Classic Stretch Denim', priceZAR: 599, layerType: 'lower_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://woolworths.co.za/', isHotDeal: false, isNew: false, isTrending: true,
+  },
+  {
+    id: 'woolworths_chino_02', storeName: 'Woolworths', storeSlug: 'woolworths',
+    title: 'Slim Fit Chino', priceZAR: 499, layerType: 'lower_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://woolworths.co.za/', isHotDeal: true, isNew: false, isTrending: false,
+  },
+  {
+    id: 'woolworths_skirt_03', storeName: 'Woolworths', storeSlug: 'woolworths',
+    title: 'Pencil Midi Skirt', priceZAR: 549, layerType: 'lower_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5974ca5596?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://woolworths.co.za/', isHotDeal: false, isNew: true, isTrending: true,
+  },
+  {
+    id: 'woolworths_belt_04', storeName: 'Woolworths', storeSlug: 'woolworths',
+    title: 'Leather Belt', priceZAR: 199, layerType: 'accessory',
+    productImageUrl: 'https://images.unsplash.com/photo-1624378440082-c5ff2e97b555?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://woolworths.co.za/', isHotDeal: true, isNew: true, isTrending: false,
+  },
+
+  // ── ZARA ──────────────────────────────────────────────────────────────────
+  {
+    id: 'zara_blazer_01', storeName: 'Zara', storeSlug: 'zara',
+    title: 'Tailored Blazer', priceZAR: 1299, layerType: 'outer_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://www.zara.com/za/', isHotDeal: true, isNew: false, isTrending: true,
+  },
+  {
+    id: 'zara_shirt_02', storeName: 'Zara', storeSlug: 'zara',
+    title: 'Linen Stripe Shirt', priceZAR: 649, layerType: 'inner_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://www.zara.com/za/', isHotDeal: false, isNew: true, isTrending: false,
+  },
+  {
+    id: 'zara_trouser_03', storeName: 'Zara', storeSlug: 'zara',
+    title: 'High-Waist Trousers', priceZAR: 849, layerType: 'lower_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4b4e5e?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://www.zara.com/za/', isHotDeal: true, isNew: false, isTrending: true,
+  },
+  {
+    id: 'zara_dress_04', storeName: 'Zara', storeSlug: 'zara',
+    title: 'Satin Slip Dress', priceZAR: 999, layerType: 'full_body',
+    productImageUrl: 'https://images.unsplash.com/photo-1572804013427-4d7ca7268217?auto=format&fit=max&w=400&q=80',
+    affiliateCheckoutUrl: 'https://www.zara.com/za/', isHotDeal: false, isNew: true, isTrending: true,
   },
 ];
 
