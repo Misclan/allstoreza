@@ -326,13 +326,13 @@ export default function App() {
   // ── Derived ───────────────────────────────────────────────────────────
   const activeStoreItems = useMemo(() =>
     activeStoreId ? retailCatalog.filter(i => i.storeSlug === activeStoreId) : [],
-    [activeStoreId]
+    [activeStoreId, retailCatalog]
   );
 
   const visibleCatalog = useMemo(() => {
     const ids = new Set(stores.filter(s => s.active).map(s => s.id));
     return retailCatalog.filter(i => ids.has(i.storeSlug));
-  }, [stores]);
+  }, [stores, retailCatalog]);
 
   const cartCount = useMemo(() =>
     directCart.reduce((s, i) => s + i.qty, 0),
