@@ -7,6 +7,7 @@ import AvatarStrip from './AvatarStrip.jsx';
 import CartPanel from './CartPanel.jsx';
 import PayMockPage from './PayMockPage.jsx';
 
+// ── Icons ────────────────────────────────────────────────────────────────
 const DotsIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
     <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
@@ -29,6 +30,19 @@ const HeartIcon = () => (
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
   </svg>
 );
+const AlertIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/>
+    <line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+);
+const EyeIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
 
 export default function Workspace({
   activeCanvasUrl, defaultAvatarUrl, garmentOverlays,
@@ -44,6 +58,9 @@ export default function Workspace({
   payStore, onCheckout, onPayComplete,
   stores, onToggleStore,
   activeStoreId, activeTileFilter, onOpenStore, onCloseStore, activeStoreItems,
+  /* New VTO props */
+  vtoStatus = 'idle',
+  vtoError = null,
 }) {
   const [activeChipId, setActiveChipId]     = useState(null);
   const [wardrobeExternalTrigger, setWardrobeExternalTrigger] = useState(null);
@@ -52,8 +69,15 @@ export default function Workspace({
   const storeOpen     = !!activeStoreId;
   const activeStore   = stores.find(s => s.id === activeStoreId);
 
+  // Determine if we're showing CSS overlay (not real VTO)
+  const isPreviewMode = selectedItems.length > 0 && (
+    vtoStatus === 'failed' ||
+    vtoStatus === 'fallback' ||
+    vtoStatus === 'no_endpoint'
+  );
+
   const handleSavedClick = useCallback(() => {
-    setWardrobeExternalTrigger(Date.now()); // triggers filter in WardrobeTray
+    setWardrobeExternalTrigger(Date.now());
     setTimeout(() => {
       wardrobeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
@@ -118,10 +142,18 @@ export default function Workspace({
             </div>
           </div>
 
+          {/* ── VTO Error Banner ───────────────────────────────────────── */}
+          {vtoStatus === 'failed' && vtoError && (
+            <div className="vto-error-banner">
+              <AlertIcon />
+              <span>{vtoError}</span>
+            </div>
+          )}
+
           <div className="canvas-preview">
             <img src={activeCanvasUrl} alt="Avatar" />
 
-            {/* Garment overlays — CSS fallback when VTO Lambda unavailable */}
+            {/* Garment overlays — CSS fallback when VTO unavailable */}
             {selectedItems.map(item => {
               const pos = garmentOverlays[item.layerType] || garmentOverlays.inner_body;
               return (
@@ -137,6 +169,20 @@ export default function Workspace({
                 </div>
               );
             })}
+
+            {/* Preview mode badge */}
+            {isPreviewMode && (
+              <div className="vto-preview-badge">
+                <EyeIcon /> Preview
+              </div>
+            )}
+
+            {/* VTO success badge */}
+            {vtoStatus === 'success' && selectedItems.length > 0 && (
+              <div className="vto-success-badge">
+                ✓ AI Try-On
+              </div>
+            )}
 
             {isLoading && <CanvasLoader stageText={loadingStage} />}
             <button

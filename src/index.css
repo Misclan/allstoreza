@@ -823,3 +823,71 @@ button, input { font: inherit; }
 
 /* ── WARDROBE DEL BUTTON hover ───────────────────────────────────────────── */
 .wcard-del-btn:hover { color: var(--red) !important; background: var(--red-dim) !important; }
+
+/* ── VTO STATUS STYLES ──────────────────────────────────────────────────────
+   Add these rules to the END of index.css (after line 826).
+   They provide visual feedback for VTO pipeline states.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── VTO Error Banner ───────────────────────────────────────────────────── */
+.vto-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--red-dim);
+  border: 1px solid rgba(184, 50, 50, 0.15);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  color: var(--red);
+  line-height: 1.4;
+  animation: vto-banner-in 0.3s ease;
+}
+.vto-error-banner svg {
+  flex-shrink: 0;
+}
+
+@keyframes vto-banner-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Preview Mode Badge (shown when CSS overlay is the fallback) ────────── */
+.vto-preview-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(26, 25, 22, 0.72);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+/* ── VTO Success Badge ──────────────────────────────────────────────────── */
+.vto-success-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(26, 92, 58, 0.85);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  pointer-events: none;
+}
