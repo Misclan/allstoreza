@@ -33,13 +33,19 @@ const SearchIcon = () => (
     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
   </svg>
 );
+const XIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
 
 export default function StoreBrowser({
   store, items, activeTileFilter,
   onTryOn, onAddToWardrobe, onDirectCartAdd, onDirectWishlistAdd,
   directCart, directWishlist, selectedItems, onClose
 }) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm]           = useState('');
+  const [viewAllSection, setViewAllSection]   = useState(null); // { label, items }
 
   const activeFilters = activeTileFilter
     ? SECTIONS.filter(s => activeTileFilter[s.key])
@@ -47,9 +53,9 @@ export default function StoreBrowser({
 
   const trimmed = searchTerm.trim().toLowerCase();
   const filteredItems = trimmed
-    ? items.filter(item =>
-        item.title.toLowerCase().includes(trimmed) ||
-        item.layerType.replace(/_/g, ' ').toLowerCase().includes(trimmed)
+    ? items.filter(i =>
+        i.title.toLowerCase().includes(trimmed) ||
+        i.layerType.replace(/_/g, ' ').toLowerCase().includes(trimmed)
       )
     : items;
 
@@ -62,8 +68,43 @@ export default function StoreBrowser({
     onAddToWardrobe(item);
   };
 
+  const getCartQty = (id) => directCart.find(c => c.id === id)?.qty || 0;
+  const isWishlisted = (id) => directWishlist.some(w => w.id === id);
+  const isSelected = (id) => selectedItems.some(s => s.id === id);
+
   return (
     <div className="store-browser">
+
+      {/* View-all modal */}
+      {viewAllSection && (
+        <div className="view-all-overlay" onClick={() => setViewAllSection(null)}>
+          <div className="view-all-panel" onClick={e => e.stopPropagation()}>
+            <div className="view-all-header">
+              <h3 className="view-all-title">{viewAllSection.label}</h3>
+              <button type="button" className="btn-icon" onClick={() => setViewAllSection(null)}>
+                <XIcon />
+              </button>
+            </div>
+            <div className="view-all-grid">
+              {viewAllSection.items.map(item => (
+                <BrowserCard
+                  key={item.id}
+                  item={item}
+                  showBadge
+                  isOn={isSelected(item.id)}
+                  cartQty={getCartQty(item.id)}
+                  inWishlist={isWishlisted(item.id)}
+                  onTryOn={() => { handleTryOn(item); setViewAllSection(null); }}
+                  onCart={() => onDirectCartAdd(item)}
+                  onWishlist={() => onDirectWishlistAdd(item)}
+                  grid
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="sb-header">
         <div className="sb-title-row">
           <button type="button" className="btn-ghost sb-back" onClick={onClose}>
@@ -74,10 +115,9 @@ export default function StoreBrowser({
             Visit store <ExternalIcon />
           </a>
         </div>
-        <p className="sb-sub">Try on items to see how they look. Items are also saved to your wardrobe.</p>
+        <p className="sb-sub">Try on items to see how they look. Items are saved to your wardrobe.</p>
       </div>
 
-      {/* Search within store */}
       <div className="sb-search-wrap">
         <span className="sb-search-icon"><SearchIcon /></span>
         <input
@@ -86,25 +126,36 @@ export default function StoreBrowser({
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
+        {searchTerm && (
+          <button className="catalog-search-clear" onClick={() => setSearchTerm('')}>
+            <XIcon />
+          </button>
+        )}
       </div>
 
-      {/* Curated sections — horizontal carousels */}
+      {/* Curated sections — NO badges on thumbnails here, section header gives context */}
       {!trimmed && sections.map(section => (
         <div key={section.key} className="sb-section">
           <div className="sb-section-header">
             <span className={`sb-section-badge ${section.color}`}>{section.badge}</span>
             <h3 className="sb-section-title">{section.label}</h3>
-            <span className="sb-count">{section.items.length}</span>
+            <button
+              type="button"
+              className="sb-view-all-btn"
+              onClick={() => setViewAllSection(section)}
+            >
+              View all
+            </button>
           </div>
           <div className="sb-carousel">
             {section.items.map(item => (
               <BrowserCard
                 key={item.id}
                 item={item}
-                badge={section}
-                isOn={selectedItems.some(s => s.id === item.id)}
-                inCart={directCart.some(c => c.id === item.id)}
-                inWishlist={directWishlist.some(w => w.id === item.id)}
+                showBadge={false}
+                isOn={isSelected(item.id)}
+                cartQty={getCartQty(item.id)}
+                inWishlist={isWishlisted(item.id)}
                 onTryOn={() => handleTryOn(item)}
                 onCart={() => onDirectCartAdd(item)}
                 onWishlist={() => onDirectWishlistAdd(item)}
@@ -114,11 +165,17 @@ export default function StoreBrowser({
         </div>
       ))}
 
-      {/* All items grid */}
+      {/* All items grid — badges shown here since no section context */}
       <div className="sb-section">
         <div className="sb-section-header">
-          <h3 className="sb-section-title">{trimmed ? `Results` : 'All items'}</h3>
-          <span className="sb-count">{filteredItems.length}</span>
+          <h3 className="sb-section-title">{trimmed ? 'Results' : 'All items'}</h3>
+          <button
+            type="button"
+            className="sb-view-all-btn"
+            onClick={() => setViewAllSection({ label: trimmed ? 'Results' : 'All items', items: filteredItems })}
+          >
+            View all
+          </button>
         </div>
         {filteredItems.length === 0 ? (
           <p className="panel-hint">No items match your search.</p>
@@ -131,9 +188,10 @@ export default function StoreBrowser({
                   key={item.id}
                   item={item}
                   badge={badge}
-                  isOn={selectedItems.some(s => s.id === item.id)}
-                  inCart={directCart.some(c => c.id === item.id)}
-                  inWishlist={directWishlist.some(w => w.id === item.id)}
+                  showBadge
+                  isOn={isSelected(item.id)}
+                  cartQty={getCartQty(item.id)}
+                  inWishlist={isWishlisted(item.id)}
                   onTryOn={() => handleTryOn(item)}
                   onCart={() => onDirectCartAdd(item)}
                   onWishlist={() => onDirectWishlistAdd(item)}
@@ -148,11 +206,11 @@ export default function StoreBrowser({
   );
 }
 
-function BrowserCard({ item, badge, isOn, inCart, inWishlist, onTryOn, onCart, onWishlist, grid }) {
+function BrowserCard({ item, badge, showBadge, isOn, cartQty, inWishlist, onTryOn, onCart, onWishlist, grid }) {
   return (
     <div className={`sb-card ${grid ? 'sb-card-grid' : ''} ${isOn ? 'sb-card-on' : ''}`}>
       <div className="sb-card-img">
-        {badge && <span className={`sb-img-badge ${badge.color}`}>{badge.badge}</span>}
+        {showBadge && badge && <span className={`sb-img-badge ${badge.color}`}>{badge.badge}</span>}
         <img src={item.productImageUrl} alt={item.title} />
       </div>
       <div className="sb-card-info">
@@ -174,18 +232,20 @@ function BrowserCard({ item, badge, isOn, inCart, inWishlist, onTryOn, onCart, o
             className={`btn-icon-square sb-wish-btn ${inWishlist ? 'btn-icon-square-wish' : ''}`}
             onClick={onWishlist}
             title={inWishlist ? 'Remove from saved' : 'Save item'}
-            aria-label="Save to wishlist"
           >
             <HeartIcon filled={inWishlist} />
           </button>
           <button
             type="button"
-            className={`btn-icon-square sb-cart-btn ${inCart ? 'btn-icon-square-active' : ''}`}
+            className={`btn-icon-square sb-cart-btn ${cartQty > 0 ? 'btn-icon-square-active' : ''}`}
             onClick={onCart}
-            title={inCart ? 'Remove from cart' : 'Add to cart'}
-            aria-label="Add to cart"
+            title="Add to cart"
           >
-            <CartIcon />
+            {cartQty > 0 ? (
+              <span style={{ fontSize: '0.7rem', fontWeight: 700 }}>{cartQty}</span>
+            ) : (
+              <CartIcon />
+            )}
           </button>
         </div>
       </div>

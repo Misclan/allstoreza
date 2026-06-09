@@ -293,7 +293,6 @@ function StoreTile({ store, items, filter, onFilterChange, onOpenStore, onItemCl
               <img src={item.productImageUrl} alt={item.title} />
               {badge && <span className={`thumb-badge ${badge.color}`}>{badge.badge}</span>}
               {isSelected && <span className="thumb-check">✓</span>}
-              <span className="thumb-price">R{item.priceZAR.toFixed(2)}</span>
             </div>
           );
         })}

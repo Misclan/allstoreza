@@ -7,19 +7,22 @@ const TrashIcon = () => (
   </svg>
 );
 
+// hasActiveOutfit: true when something is dressed (items selected OR custom avatar)
 export default function AvatarStrip({
   defaultAvatarUrl, activeCanvasUrl,
   savedOutfits, onLoad, onDelete,
   onUpload, onReset, onSaveOutfit,
-  fileInputRef, // passed from Workspace so camera icon can trigger same input
+  fileInputRef,
+  hasActiveOutfit,
 }) {
   const localRef = useRef();
   const inputRef = fileInputRef || localRef;
-  const canAdd   = savedOutfits.length < 5;
-  const isDressed = activeCanvasUrl !== defaultAvatarUrl;
+  const canAdd   = savedOutfits.length < 10;
+  const isDefault = activeCanvasUrl === defaultAvatarUrl;
 
   return (
     <div className="avatar-strip-wrap">
+      {/* Hidden file input — only triggered by camera button on canvas */}
       <input
         ref={inputRef}
         type="file"
@@ -32,9 +35,9 @@ export default function AvatarStrip({
         {/* Default slot */}
         <button
           type="button"
-          className={`avatar-slot ${!isDressed ? 'avatar-slot-active' : ''}`}
+          className={`avatar-slot ${isDefault ? 'avatar-slot-active' : ''}`}
           onClick={onReset}
-          title="Reset to default"
+          title="Reset to default avatar"
         >
           <img src={defaultAvatarUrl} alt="Default" />
           <span className="avatar-slot-label">Default</span>
@@ -59,16 +62,16 @@ export default function AvatarStrip({
           </div>
         ))}
 
-        {/* Add slot — saves current look + resets */}
-        {canAdd && (
+        {/* Save Look slot — only visible when there's something to save */}
+        {canAdd && hasActiveOutfit && (
           <button
             type="button"
             className="avatar-slot avatar-slot-add"
-            onClick={() => isDressed ? onSaveOutfit() : inputRef.current?.click()}
-            title={isDressed ? 'Save this look & reset' : 'Upload photo'}
+            onClick={onSaveOutfit}
+            title="Save this look to your wardrobe"
           >
             <span className="avatar-slot-plus">+</span>
-            <span className="avatar-slot-label">{isDressed ? 'Save look' : 'Add'}</span>
+            <span className="avatar-slot-label">Save look</span>
           </button>
         )}
       </div>

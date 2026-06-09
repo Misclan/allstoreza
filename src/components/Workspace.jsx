@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import CanvasLoader from './CanvasLoader.jsx';
 import WardrobeTray from './WardrobeTray.jsx';
 import StoreGrid from './StoreGrid.jsx';
 import StoreBrowser from './StoreBrowser.jsx';
 import AvatarStrip from './AvatarStrip.jsx';
+import CartPanel from './CartPanel.jsx';
+import PayMockPage from './PayMockPage.jsx';
 
 const DotsIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -29,22 +31,33 @@ const HeartIcon = () => (
 );
 
 export default function Workspace({
-  activeCanvasUrl, defaultAvatarUrl,
+  activeCanvasUrl, defaultAvatarUrl, garmentOverlays,
   onUpload, onReset, onSaveOutfit, onDeleteOutfit, onLoadOutfit, savedOutfits,
   onTryOn, onRemoveSelected, selectedItems,
   isLoading, loadingStage,
   retailCatalog, wardrobe,
-  onCartToggle, onWishlistToggle, onDeleteWardrobe,
-  onAddToWardrobe, onDirectCartAdd, onDirectWishlistAdd,
+  onWishlistToggle, onDeleteWardrobe, onAddToWardrobe,
+  onDirectCartAdd, onCartQtyChange, onDirectWishlistAdd,
   directCart, directWishlist,
   cartCount, wishlistCount,
+  cartOpen, onCartOpen, onCartClose,
+  payStore, onCheckout, onPayComplete,
   stores, onToggleStore,
   activeStoreId, activeTileFilter, onOpenStore, onCloseStore, activeStoreItems,
 }) {
-  const [activeChipId, setActiveChipId] = useState(null);
-  const fileInputRef = useRef();
-  const storeOpen    = !!activeStoreId;
-  const activeStore  = stores.find(s => s.id === activeStoreId);
+  const [activeChipId, setActiveChipId]     = useState(null);
+  const [wardrobeExternalTrigger, setWardrobeExternalTrigger] = useState(null);
+  const fileInputRef  = useRef();
+  const wardrobeRef   = useRef(null);
+  const storeOpen     = !!activeStoreId;
+  const activeStore   = stores.find(s => s.id === activeStoreId);
+
+  const handleSavedClick = useCallback(() => {
+    setWardrobeExternalTrigger(Date.now()); // triggers filter in WardrobeTray
+    setTimeout(() => {
+      wardrobeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }, []);
 
   return (
     <div className="workspace-root" onClick={() => setActiveChipId(null)}>
@@ -55,12 +68,16 @@ export default function Workspace({
           <span className="brand-name">Allstore<span className="brand-accent">ZA</span></span>
         </div>
         <div className="topnav-right">
-          <button className="topnav-action" title="Wishlist">
+          <button className="topnav-action" title="View saved items" onClick={handleSavedClick}>
             <HeartIcon />
             Saved
             {wishlistCount > 0 && <span className="topnav-count topnav-count-wish">{wishlistCount}</span>}
           </button>
-          <button className="topnav-action" title="Cart">
+          <button
+            className={`topnav-action ${cartOpen ? 'topnav-action-active' : ''}`}
+            title="View cart"
+            onClick={onCartOpen}
+          >
             <CartIcon />
             Cart
             {cartCount > 0 && <span className="topnav-count">{cartCount}</span>}
@@ -69,6 +86,26 @@ export default function Workspace({
           <span className="topnav-badge">Guest</span>
         </div>
       </header>
+
+      {/* ── CART PANEL ──────────────────────────────────────────────────── */}
+      {cartOpen && (
+        <CartPanel
+          directCart={directCart}
+          onQtyChange={onCartQtyChange}
+          stores={stores}
+          onClose={onCartClose}
+          onCheckout={onCheckout}
+        />
+      )}
+
+      {/* ── PAY MOCK PAGE ────────────────────────────────────────────────── */}
+      {payStore && (
+        <PayMockPage
+          storeGroup={payStore}
+          onReturn={() => { onPayComplete(); onCartOpen(); }}
+          onComplete={onPayComplete}
+        />
+      )}
 
       <div className={`workspace-grid ${storeOpen ? 'store-open' : ''}`}>
 
@@ -83,6 +120,24 @@ export default function Workspace({
 
           <div className="canvas-preview">
             <img src={activeCanvasUrl} alt="Avatar" />
+
+            {/* Garment overlays — CSS fallback when VTO Lambda unavailable */}
+            {selectedItems.map(item => {
+              const pos = garmentOverlays[item.layerType] || garmentOverlays.inner_body;
+              return (
+                <div
+                  key={item.id}
+                  className="garment-overlay"
+                  style={{
+                    top: pos.top, left: pos.left,
+                    width: pos.width, opacity: pos.opacity,
+                  }}
+                >
+                  <img src={item.productImageUrl} alt="" />
+                </div>
+              );
+            })}
+
             {isLoading && <CanvasLoader stageText={loadingStage} />}
             <button
               type="button"
@@ -131,6 +186,7 @@ export default function Workspace({
             onReset={onReset}
             onSaveOutfit={onSaveOutfit}
             fileInputRef={fileInputRef}
+            hasActiveOutfit={selectedItems.length > 0 || activeCanvasUrl !== defaultAvatarUrl}
           />
 
           <p className="panel-hint">Select items from the catalog to try on your avatar.</p>
@@ -174,8 +230,8 @@ export default function Workspace({
       </div>
 
       {/* ── WARDROBE ─────────────────────────────────────────────────────── */}
-      <section className="wardrobe-panel">
-        <div className="panel-header" style={{ marginBottom: '1rem' }}>
+      <section className="wardrobe-panel" ref={wardrobeRef}>
+        <div className="panel-header" style={{ marginBottom: '0.75rem' }}>
           <div>
             <p className="eyebrow">My wardrobe</p>
             <h2 className="panel-title">Your saved pieces</h2>
@@ -183,11 +239,16 @@ export default function Workspace({
         </div>
         <WardrobeTray
           items={wardrobe}
+          savedOutfits={savedOutfits}
           selectedItems={selectedItems}
           onTryOn={onTryOn}
-          onCartToggle={onCartToggle}
           onWishlistToggle={onWishlistToggle}
           onDelete={onDeleteWardrobe}
+          onCartAdd={onDirectCartAdd}
+          directCart={directCart}
+          onDeleteOutfit={onDeleteOutfit}
+          onLoadOutfit={onLoadOutfit}
+          externalSavedFilter={wardrobeExternalTrigger}
         />
       </section>
     </div>

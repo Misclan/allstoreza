@@ -546,3 +546,280 @@ button, input { font: inherit; }
 .empty-state-icon { color: var(--border-mid); margin-bottom: 0.25rem; }
 .empty-state-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 600; }
 .empty-state-sub { font-size: 0.82rem; color: var(--text-muted); max-width: 240px; line-height: 1.5; }
+
+/* ── GARMENT OVERLAY (VTO CSS fallback) ─────────────────────────────────── */
+.garment-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));
+}
+.garment-overlay img {
+  width: 100%; height: auto; display: block;
+}
+
+/* ── CANVAS: portrait aspect ratio, fills box ───────────────────────────── */
+.canvas-preview {
+  aspect-ratio: 2/3 !important;
+  min-height: auto !important;
+}
+.canvas-preview > img {
+  width: 100%; height: 100%;
+  object-fit: cover !important;
+  object-position: top center !important;
+  min-height: auto !important;
+}
+
+/* ── STORE THUMBNAILS: fill tile, no price ──────────────────────────────── */
+.store-thumb img {
+  width: 100%;
+  aspect-ratio: 3/4 !important;
+  object-fit: cover;
+  object-position: top center;
+}
+.store-thumb { overflow: hidden; }
+.thumb-price { display: none !important; }
+
+/* ── TOPNAV ACTIVE ───────────────────────────────────────────────────────── */
+.topnav-action-active { color: var(--text) !important; background: var(--accent-dim); }
+
+/* ── CART PANEL ──────────────────────────────────────────────────────────── */
+.cart-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(26,25,22,0.3); backdrop-filter: blur(2px);
+  z-index: 98;
+}
+.cart-panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: min(420px, 100vw);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 99;
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.08);
+}
+.cart-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cart-panel-title {
+  font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.cart-panel-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--text); color: #fff;
+  width: 20px; height: 20px; border-radius: 50%;
+  font-size: 0.72rem; font-weight: 700; font-family: 'DM Sans', sans-serif;
+}
+.cart-panel-body { flex: 1; overflow-y: auto; padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.cart-store-group {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+.cart-store-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.cart-store-name { font-family: 'Playfair Display', serif; font-size: 0.9rem; font-weight: 700; }
+.cart-store-total { font-size: 0.82rem; font-weight: 600; color: var(--text-mid); }
+.cart-item-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+}
+.cart-item-row:last-of-type { border-bottom: none; }
+.cart-item-img {
+  width: 56px; height: 70px; flex-shrink: 0;
+  border-radius: var(--radius-sm); overflow: hidden; background: var(--surface2);
+}
+.cart-item-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.cart-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cart-item-name { font-size: 0.82rem; font-weight: 500; color: var(--text); line-height: 1.3; }
+.cart-item-unit { font-size: 0.72rem; color: var(--text-muted); }
+.cart-item-subtotal { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.cart-qty-ctrl {
+  display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0;
+}
+.cart-qty-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cart-qty-btn:hover { background: var(--accent-dim); border-color: var(--border-mid); }
+.cart-qty-num { font-size: 0.85rem; font-weight: 600; min-width: 20px; text-align: center; }
+.cart-pay-btn {
+  width: 100%; background: var(--text); color: #fff;
+  border: none; padding: 0.75rem 1rem;
+  font-size: 0.82rem; font-weight: 500; font-family: inherit;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  transition: opacity 0.15s; letter-spacing: 0.02em;
+}
+.cart-pay-btn:hover { opacity: 0.85; }
+.cart-panel-footer {
+  padding: 1rem 1.5rem; border-top: 1px solid var(--border);
+  flex-shrink: 0; background: var(--surface);
+}
+.cart-grand-total { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; }
+.cart-grand-amount { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; }
+.cart-footer-hint { font-size: 0.72rem; color: var(--text-muted); }
+
+/* ── PAY MOCK PAGE ───────────────────────────────────────────────────────── */
+.pay-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg); overflow-y: auto;
+}
+.pay-page {
+  max-width: 560px; margin: 0 auto;
+  padding: 1.5rem 1.5rem 4rem;
+  display: flex; flex-direction: column; gap: 1.5rem;
+}
+.pay-return-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+}
+.pay-return-btn { font-size: 0.82rem; }
+.pay-secure-badge {
+  display: flex; align-items: center; gap: 0.3rem;
+  font-size: 0.72rem; color: var(--text-muted);
+}
+.pay-store-identity { text-align: center; padding: 1rem 0; }
+.pay-store-domain { font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: lowercase; }
+.pay-store-name { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; margin: 0.25rem 0; }
+.pay-store-tagline { font-size: 0.8rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.pay-body { display: flex; flex-direction: column; gap: 1rem; }
+.pay-order-card, .pay-form-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;
+}
+.pay-section-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; }
+.pay-item-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.pay-item-row { display: flex; align-items: center; gap: 0.875rem; }
+.pay-item-img { width: 52px; height: 65px; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface2); flex-shrink: 0; }
+.pay-item-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.pay-item-detail { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pay-item-name { font-size: 0.82rem; font-weight: 500; }
+.pay-item-meta { font-size: 0.72rem; color: var(--text-muted); }
+.pay-item-total { font-size: 0.82rem; font-weight: 600; flex-shrink: 0; }
+.pay-order-totals { border-top: 1px solid var(--border); padding-top: 0.875rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.pay-total-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; }
+.pay-free { color: var(--green); font-weight: 500; }
+.pay-grand { font-size: 0.95rem; font-weight: 700; margin-top: 0.25rem; }
+.pay-form-field { display: flex; flex-direction: column; gap: 0.35rem; }
+.pay-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.pay-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.pay-input {
+  padding: 0.65rem 0.875rem; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 0.83rem;
+}
+.pay-input-mock { color: var(--text-muted); letter-spacing: 0.08em; }
+.pay-mock-note {
+  font-size: 0.75rem; color: var(--text-muted); line-height: 1.6;
+  padding: 0.75rem; background: var(--surface2); border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.pay-complete-btn {
+  width: 100%; padding: 0.875rem;
+  border-radius: var(--radius-sm); font-size: 0.9rem;
+}
+.pay-date-note { font-size: 0.72rem; color: var(--text-muted); text-align: center; }
+
+/* ── WARDROBE TABS ───────────────────────────────────────────────────────── */
+.wardrobe-tray { display: flex; flex-direction: column; gap: 0; }
+.wardrobe-tabs {
+  display: flex; align-items: center; gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem; flex-wrap: wrap;
+}
+.wardrobe-tab {
+  display: flex; align-items: center; gap: 0.35rem;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 0.6rem 1rem 0.5rem; font-size: 0.83rem; font-weight: 500;
+  color: var(--text-muted); cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+.wardrobe-tab:hover { color: var(--text); }
+.wardrobe-tab-active { color: var(--text); border-bottom-color: var(--text); }
+.wardrobe-tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-mid); min-width: 18px; height: 18px;
+  border-radius: 999px; padding: 0 4px;
+  font-size: 0.65rem; font-weight: 600;
+}
+.wardrobe-filters {
+  display: flex; gap: 0.35rem; align-items: center;
+  margin-left: auto; padding: 0.3rem 0;
+}
+.wardrobe-filters .filter-chip { padding: 0.22rem 0.65rem; font-size: 0.72rem; }
+
+/* ── SAVED LOOKS TAB ─────────────────────────────────────────────────────── */
+.saved-looks-wrap { display: flex; flex-direction: column; gap: 1.5rem; }
+.saved-looks-group { display: flex; flex-direction: column; gap: 0.75rem; }
+.saved-looks-date {
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--text-muted); font-weight: 500;
+}
+.saved-looks-strip {
+  display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.saved-look-thumb {
+  flex-shrink: 0; width: 120px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.saved-look-thumb img {
+  width: 120px; height: 160px; object-fit: cover; object-position: top;
+  border-radius: var(--radius-sm); border: 1px solid var(--border);
+  cursor: pointer; transition: border-color 0.15s;
+}
+.saved-look-thumb img:hover { border-color: var(--border-mid); }
+.saved-look-garments {
+  font-size: 0.65rem; color: var(--text-muted); line-height: 1.4;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.saved-look-actions {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.saved-look-label { font-size: 0.7rem; color: var(--text-mid); font-weight: 500; }
+
+/* ── VIEW ALL MODAL ──────────────────────────────────────────────────────── */
+.view-all-overlay {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(26,25,22,0.4); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+}
+.view-all-panel {
+  background: var(--surface); border-radius: var(--radius);
+  width: 100%; max-width: 860px; max-height: 80vh;
+  display: flex; flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+.view-all-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.view-all-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; }
+.view-all-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem; padding: 1.25rem 1.5rem; overflow-y: auto;
+}
+
+/* ── SB VIEW ALL BUTTON ──────────────────────────────────────────────────── */
+.sb-view-all-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 0.75rem; color: var(--text-muted);
+  text-decoration: underline; text-underline-offset: 2px;
+  padding: 0; margin-left: auto;
+  transition: color 0.15s;
+}
+.sb-view-all-btn:hover { color: var(--text); }
+
+/* ── WARDROBE DEL BUTTON hover ───────────────────────────────────────────── */
+.wcard-del-btn:hover { color: var(--red) !important; background: var(--red-dim) !important; }
