@@ -70,11 +70,7 @@ export default function Workspace({
   const activeStore   = stores.find(s => s.id === activeStoreId);
 
   // Determine if we're showing CSS overlay (not real VTO)
-  const isPreviewMode = selectedItems.length > 0 && (
-    vtoStatus === 'failed' ||
-    vtoStatus === 'fallback' ||
-    vtoStatus === 'no_endpoint'
-  );
+  const isPreviewMode = selectedItems.length > 0 && vtoStatus !== 'success';
 
   const handleSavedClick = useCallback(() => {
     setWardrobeExternalTrigger(Date.now());
@@ -151,10 +147,17 @@ export default function Workspace({
           )}
 
           <div className="canvas-preview">
-            <img src={activeCanvasUrl} alt="Avatar" />
+            <img
+              src={activeCanvasUrl}
+              alt="Avatar"
+              onError={(e) => {
+                console.error('Avatar image failed to load:', activeCanvasUrl);
+                e.currentTarget.src = defaultAvatarUrl;
+              }}
+            />
 
             {/* Garment overlays — CSS fallback when VTO unavailable */}
-            {selectedItems.map(item => {
+            {isPreviewMode && selectedItems.map(item => {
               const pos = garmentOverlays[item.layerType] || garmentOverlays.inner_body;
               return (
                 <div

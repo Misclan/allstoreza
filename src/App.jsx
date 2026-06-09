@@ -166,7 +166,13 @@ export default function App() {
         }),
       });
 
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `Try-on failed (${res.status})`);
+      }
+
       const data = await res.json();
+      console.log('TRYON RESPONSE:', data);
 
       if (data.success && data.outputUrl) {
         // Real VTO result
@@ -195,13 +201,15 @@ export default function App() {
   }, [activeCanvasUrl, selectedItems]);
 
   const handleRemoveSelected = useCallback((itemId) => {
-    setSelectedItems(cur => cur.filter(x => x.id !== itemId));
-    // If no items left, reset VTO status
-    if (selectedItems.length <= 1) {
-      setVtoStatus(VTO_STATUS.IDLE);
-      setVtoError(null);
-    }
-  }, [selectedItems]);
+    setSelectedItems(cur => {
+      const updated = cur.filter(x => x.id !== itemId);
+      if (updated.length === 0) {
+        setVtoStatus(VTO_STATUS.IDLE);
+        setVtoError(null);
+      }
+      return updated;
+    });
+  }, []);
 
   // ── Avatar / upload ───────────────────────────────────────────────────
   const handleUpload = useCallback((file) => {

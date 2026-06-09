@@ -14,7 +14,7 @@ Parameters:
 
   HuggingFaceUrl:
     Type: String
-    Default: https://yisol-idm-vton.hf.space/--replicas/0/api/predict
+    Default: https://yisol-idm-vton.hf.space
 
   GitHubRepoUrl:
     Type: String
@@ -40,8 +40,8 @@ Globals:
   Function:
     Runtime: nodejs22.x
     Architectures: [arm64]
-    Timeout: 30
-    MemorySize: 256
+    Timeout: 60
+    MemorySize: 512
 
 # ── RESOURCES ─────────────────────────────────────────────────────────────────
 Resources:

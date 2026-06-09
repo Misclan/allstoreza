@@ -99,11 +99,12 @@ async function callGradioPredict(userB64, garmentB64) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(50_000),
+      signal: AbortSignal.timeout(60_000),
     });
 
     if (res.ok) {
       const data = await res.json();
+      console.log('HF RAW RESPONSE:', JSON.stringify(data).slice(0, 3000));
       const outputUrl = extractOutputUrl(data);
       if (outputUrl) return outputUrl;
     }
@@ -150,9 +151,9 @@ async function callGradioQueue(payload) {
     throw new Error('Queue join returned no event_id');
   }
 
-  // Poll for result (up to 45 seconds)
+  // Poll for result (up to 55 seconds)
   const pollStart = Date.now();
-  const maxPollMs = 45_000;
+  const maxPollMs = 55_000;
 
   while (Date.now() - pollStart < maxPollMs) {
     await sleep(2000);
@@ -201,6 +202,7 @@ function extractOutputUrl(data) {
     if (d[0]?.path) return `${HF_BASE}/file=${d[0].path}`;
   }
 
+  console.warn('Unable to extract output URL from:', JSON.stringify(data).slice(0, 1000));
   return null;
 }
 
