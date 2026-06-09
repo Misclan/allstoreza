@@ -10,21 +10,21 @@ const DotsIcon = () => (
     <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
   </svg>
 );
-
 const CameraIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
     <circle cx="12" cy="13" r="4"/>
   </svg>
 );
-
-const SlidersIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
-    <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
-    <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
-    <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/>
-    <line x1="17" y1="16" x2="23" y2="16"/>
+const CartIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+  </svg>
+);
+const HeartIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
   </svg>
 );
 
@@ -35,8 +35,10 @@ export default function Workspace({
   isLoading, loadingStage,
   retailCatalog, wardrobe,
   onCartToggle, onWishlistToggle, onDeleteWardrobe,
-  onAddToWardrobe, onDirectCartAdd, directCart,
-  activeTotal, stores, onToggleStore,
+  onAddToWardrobe, onDirectCartAdd, onDirectWishlistAdd,
+  directCart, directWishlist,
+  cartCount, wishlistCount,
+  stores, onToggleStore,
   activeStoreId, activeTileFilter, onOpenStore, onCloseStore, activeStoreItems,
 }) {
   const [activeChipId, setActiveChipId] = useState(null);
@@ -50,12 +52,20 @@ export default function Workspace({
       {/* ── TOPNAV ──────────────────────────────────────────────────────── */}
       <header className="topnav">
         <div className="topnav-brand">
-          <span className="brand-name">AllstoreZ<span className="brand-accent">A</span></span>
+          <span className="brand-name">Allstore<span className="brand-accent">ZA</span></span>
         </div>
         <div className="topnav-right">
-          <span className="topnav-total">
-            Total <strong>R{activeTotal.toFixed(2)}</strong>
-          </span>
+          <button className="topnav-action" title="Wishlist">
+            <HeartIcon />
+            Saved
+            {wishlistCount > 0 && <span className="topnav-count topnav-count-wish">{wishlistCount}</span>}
+          </button>
+          <button className="topnav-action" title="Cart">
+            <CartIcon />
+            Cart
+            {cartCount > 0 && <span className="topnav-count">{cartCount}</span>}
+          </button>
+          <div className="topnav-divider" />
           <span className="topnav-badge">Guest</span>
         </div>
       </header>
@@ -66,16 +76,14 @@ export default function Workspace({
         <section className="canvas-panel">
           <div className="panel-header">
             <div>
-              <p className="eyebrow">Live Fitting Room</p>
+              <p className="eyebrow">Fitting Room</p>
               <h2 className="panel-title">Try-on studio</h2>
             </div>
           </div>
 
-          {/* Canvas */}
           <div className="canvas-preview">
             <img src={activeCanvasUrl} alt="Avatar" />
             {isLoading && <CanvasLoader stageText={loadingStage} />}
-            {/* Camera icon — top right corner of canvas */}
             <button
               type="button"
               className="canvas-camera-btn"
@@ -87,7 +95,6 @@ export default function Workspace({
             </button>
           </div>
 
-          {/* Outfit chips */}
           {selectedItems.length > 0 && (
             <div className="outfit-chips" onClick={e => e.stopPropagation()}>
               {selectedItems.map(item => (
@@ -114,7 +121,6 @@ export default function Workspace({
             </div>
           )}
 
-          {/* Avatar strip */}
           <AvatarStrip
             defaultAvatarUrl={defaultAvatarUrl}
             activeCanvasUrl={activeCanvasUrl}
@@ -127,7 +133,7 @@ export default function Workspace({
             fileInputRef={fileInputRef}
           />
 
-          <p className="panel-hint">Select items from the catalog or your wardrobe to try on.</p>
+          <p className="panel-hint">Select items from the catalog to try on your avatar.</p>
         </section>
 
         {/* ── CATALOG / STORE BROWSER ──────────────────────────────────── */}
@@ -140,23 +146,19 @@ export default function Workspace({
               onTryOn={onTryOn}
               onAddToWardrobe={onAddToWardrobe}
               onDirectCartAdd={onDirectCartAdd}
+              onDirectWishlistAdd={onDirectWishlistAdd}
               directCart={directCart}
+              directWishlist={directWishlist}
               selectedItems={selectedItems}
               onClose={onCloseStore}
             />
           ) : (
             <>
-              <div className="panel-header">
+              <div className="panel-header" style={{ marginBottom: '1rem' }}>
                 <div>
                   <p className="eyebrow">Retail catalog</p>
                   <h2 className="panel-title">Curated collections</h2>
                 </div>
-                {/* Manage stores — aligned with heading */}
-                <button type="button" className="btn-outline manage-stores-btn" onClick={() => {
-                  // trigger via StoreGrid's internal state — pass down a prop
-                }}>
-                  <SlidersIcon /> Manage stores
-                </button>
               </div>
               <StoreGrid
                 items={retailCatalog}
@@ -173,10 +175,10 @@ export default function Workspace({
 
       {/* ── WARDROBE ─────────────────────────────────────────────────────── */}
       <section className="wardrobe-panel">
-        <div className="panel-header">
+        <div className="panel-header" style={{ marginBottom: '1rem' }}>
           <div>
             <p className="eyebrow">My wardrobe</p>
-            <h2 className="panel-title">Your personal styles</h2>
+            <h2 className="panel-title">Your saved pieces</h2>
           </div>
         </div>
         <WardrobeTray

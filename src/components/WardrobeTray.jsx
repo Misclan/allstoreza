@@ -4,7 +4,7 @@ const HeartIcon = ({ filled }) => (
   </svg>
 );
 const CartIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
   </svg>
@@ -18,7 +18,17 @@ const TrashIcon = () => (
 
 export default function WardrobeTray({ items, selectedItems, onTryOn, onCartToggle, onWishlistToggle, onDelete }) {
   if (items.length === 0) {
-    return <p className="panel-hint">Your wardrobe is empty. Upload clothing items to build your personal style.</p>;
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/>
+          </svg>
+        </div>
+        <p className="empty-state-title">Your wardrobe is empty</p>
+        <p className="empty-state-sub">Try on items from the catalog to start building your wardrobe.</p>
+      </div>
+    );
   }
 
   return (
@@ -46,24 +56,30 @@ export default function WardrobeTray({ items, selectedItems, onTryOn, onCartTogg
               </button>
               <button
                 type="button"
-                className={`btn-outline wcard-cart ${item.inCart ? 'btn-active' : ''}`}
+                className={`btn-icon-square ${item.inCart ? 'btn-icon-square-active' : ''}`}
                 onClick={() => onCartToggle(item.id)}
+                title={item.inCart ? 'Remove from cart' : 'Add to cart'}
+                aria-label="Cart"
               >
-                <CartIcon /> {item.inCart ? 'In cart' : 'Cart'}
+                <CartIcon />
               </button>
               <button
                 type="button"
-                className={`btn-icon ${item.inWishlist ? 'btn-icon-wish' : ''}`}
+                className={`btn-icon-square ${item.inWishlist ? 'btn-icon-square-wish' : ''}`}
                 onClick={() => onWishlistToggle(item.id)}
-                aria-label="Wishlist"
+                aria-label="Save to wishlist"
+                title={item.inWishlist ? 'Remove from saved' : 'Save item'}
               >
                 <HeartIcon filled={item.inWishlist} />
               </button>
               <button
                 type="button"
-                className="btn-icon btn-icon-del"
+                className="btn-icon-square"
                 onClick={() => onDelete(item.id)}
-                aria-label="Delete"
+                aria-label="Remove from wardrobe"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.background = 'var(--red-dim)'; e.currentTarget.style.borderColor = 'transparent'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = ''; e.currentTarget.style.background = ''; e.currentTarget.style.borderColor = ''; }}
               >
                 <TrashIcon />
               </button>

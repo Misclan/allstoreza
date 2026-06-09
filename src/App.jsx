@@ -17,7 +17,8 @@ export default function App() {
   const [stores, setStores]                   = useState(storesData);
   const [activeStoreId, setActiveStoreId]     = useState(null);
   const [activeTileFilter, setActiveTileFilter] = useState(null);
-  const [directCart, setDirectCart]           = useState([]); // items added straight to cart from browser
+  const [directCart, setDirectCart]           = useState([]);
+  const [directWishlist, setDirectWishlist]   = useState([]);
 
   const [wardrobe, setWardrobe] = useState(() =>
     wardrobeItemsData
@@ -27,7 +28,6 @@ export default function App() {
 
   // ── Try-on ──────────────────────────────────────────────────────────────
   const handleTryOn = useCallback(async (item) => {
-    // Toggle off if already applied
     if (selectedItems.some(x => x.id === item.id)) {
       setSelectedItems(cur => cur.filter(x => x.id !== item.id));
       return;
@@ -74,7 +74,6 @@ export default function App() {
     setSelectedItems([]);
   }, []);
 
-  // Save current look to strip, then reset avatar for next pairing
   const handleSaveOutfit = useCallback(() => {
     if (activeCanvasUrl === DEFAULT_AVATAR) return;
     setSavedOutfits(prev => {
@@ -85,20 +84,19 @@ export default function App() {
     setSelectedItems([]);
   }, [activeCanvasUrl]);
 
-  const handleDeleteOutfit  = useCallback((id) => setSavedOutfits(prev => prev.filter(o => o.id !== id)), []);
-  const handleLoadOutfit    = useCallback((outfit) => setActiveCanvasUrl(outfit.url), []);
+  const handleDeleteOutfit = useCallback((id) => setSavedOutfits(prev => prev.filter(o => o.id !== id)), []);
+  const handleLoadOutfit   = useCallback((outfit) => setActiveCanvasUrl(outfit.url), []);
 
   // ── Stores ───────────────────────────────────────────────────────────────
-  const handleToggleStore   = useCallback((id) => setStores(prev => prev.map(s => s.id === id ? { ...s, active: !s.active } : s)), []);
-  const handleOpenStore     = useCallback((storeId, filter) => { setActiveStoreId(storeId); setActiveTileFilter(filter || null); }, []);
-  const handleCloseStore    = useCallback(() => { setActiveStoreId(null); setActiveTileFilter(null); }, []);
+  const handleToggleStore = useCallback((id) => setStores(prev => prev.map(s => s.id === id ? { ...s, active: !s.active } : s)), []);
+  const handleOpenStore   = useCallback((storeId, filter) => { setActiveStoreId(storeId); setActiveTileFilter(filter || null); }, []);
+  const handleCloseStore  = useCallback(() => { setActiveStoreId(null); setActiveTileFilter(null); }, []);
 
   // ── Wardrobe ─────────────────────────────────────────────────────────────
-  const handleCartToggle    = useCallback((id) => setWardrobe(prev => prev.map(i => i.id === id ? { ...i, inCart: !i.inCart } : i)), []);
-  const handleWishlistToggle= useCallback((id) => setWardrobe(prev => prev.map(i => i.id === id ? { ...i, inWishlist: !i.inWishlist } : i)), []);
-  const handleDeleteWardrobe= useCallback((id) => { setWardrobe(prev => prev.filter(i => i.id !== id)); setSelectedItems(prev => prev.filter(x => x.id !== id)); }, []);
+  const handleCartToggle     = useCallback((id) => setWardrobe(prev => prev.map(i => i.id === id ? { ...i, inCart: !i.inCart } : i)), []);
+  const handleWishlistToggle = useCallback((id) => setWardrobe(prev => prev.map(i => i.id === id ? { ...i, inWishlist: !i.inWishlist } : i)), []);
+  const handleDeleteWardrobe = useCallback((id) => { setWardrobe(prev => prev.filter(i => i.id !== id)); setSelectedItems(prev => prev.filter(x => x.id !== id)); }, []);
 
-  // Add catalog item to wardrobe (called from StoreBrowser "Try on")
   const handleAddToWardrobe = useCallback((item) => {
     setWardrobe(prev => {
       if (prev.some(i => i.id === item.id)) return prev;
@@ -106,9 +104,13 @@ export default function App() {
     });
   }, []);
 
-  // Direct cart from StoreBrowser
+  // ── Direct cart & wishlist (from catalog/browser) ────────────────────────
   const handleDirectCartAdd = useCallback((item) => {
     setDirectCart(prev => prev.some(i => i.id === item.id) ? prev.filter(i => i.id !== item.id) : [...prev, item]);
+  }, []);
+
+  const handleDirectWishlistAdd = useCallback((item) => {
+    setDirectWishlist(prev => prev.some(i => i.id === item.id) ? prev.filter(i => i.id !== item.id) : [...prev, item]);
   }, []);
 
   // ── Derived ──────────────────────────────────────────────────────────────
@@ -122,11 +124,15 @@ export default function App() {
     return retailCatalog.filter(i => ids.has(i.storeSlug));
   }, [stores]);
 
-  const activeTotal = useMemo(() => [
-    ...selectedItems,
-    ...wardrobe.filter(i => i.inCart),
-    ...directCart,
-  ].reduce((s, i) => s + (i.priceZAR || 0), 0), [selectedItems, wardrobe, directCart]);
+  const cartCount = useMemo(() =>
+    wardrobe.filter(i => i.inCart).length + directCart.length,
+    [wardrobe, directCart]
+  );
+
+  const wishlistCount = useMemo(() =>
+    wardrobe.filter(i => i.inWishlist).length + directWishlist.length,
+    [wardrobe, directWishlist]
+  );
 
   return (
     <div className="app-shell">
@@ -151,8 +157,11 @@ export default function App() {
         onDeleteWardrobe={handleDeleteWardrobe}
         onAddToWardrobe={handleAddToWardrobe}
         onDirectCartAdd={handleDirectCartAdd}
+        onDirectWishlistAdd={handleDirectWishlistAdd}
         directCart={directCart}
-        activeTotal={activeTotal}
+        directWishlist={directWishlist}
+        cartCount={cartCount}
+        wishlistCount={wishlistCount}
         stores={stores}
         onToggleStore={handleToggleStore}
         activeStoreId={activeStoreId}

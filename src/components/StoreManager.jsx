@@ -4,7 +4,13 @@ export default function StoreManager({ stores, onToggle, onClose }) {
       <div className="store-manager-panel" onClick={(e) => e.stopPropagation()}>
         <div className="store-manager-header">
           <h2>Manage Stores</h2>
-          <button className="icon-btn" onClick={onClose} type="button" aria-label="Close">✕</button>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={onClose}
+            aria-label="Close"
+            style={{ padding: '0.25rem 0.5rem', fontSize: '0.9rem' }}
+          >✕</button>
         </div>
         <p className="store-manager-sub">Toggle which stores appear in the catalog.</p>
         <ul className="store-list">
@@ -22,7 +28,12 @@ export default function StoreManager({ stores, onToggle, onClose }) {
             </li>
           ))}
         </ul>
-        <button className="button" style={{ marginTop: '1.5rem', width: '100%' }} onClick={onClose} type="button">
+        <button
+          type="button"
+          className="btn-primary"
+          style={{ marginTop: '1.5rem', width: '100%', borderRadius: 'var(--radius-sm)' }}
+          onClick={onClose}
+        >
           Done
         </button>
       </div>
