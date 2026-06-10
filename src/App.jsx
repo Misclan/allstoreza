@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import Workspace from './components/Workspace.jsx';
 import retailCatalog from './data/catalog.js';
 import wardrobeItemsData from './data/wardrobe.js';
@@ -7,15 +7,50 @@ import storesData from './data/stores.js';
 
 const DEFAULT_AVATAR = userProfile.avatarCanvasUrl;
 
+// ── Error Boundary ───────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    this.setState({ errorInfo });
+    console.error('React caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return React.createElement('div', { style: { padding: '20px', fontFamily: 'monospace', background: '#fff' } },
+        React.createElement('h1', null, '⚠️ App Error'),
+        React.createElement('p', null, String(this.state.error?.message || 'Unknown error')),
+        React.createElement('pre', { style: { background: '#f0f0f0', padding: '10px', fontSize: '12px', maxHeight: '400px', overflow: 'auto' } },
+          String(this.state.error?.stack || '')
+        ),
+        React.createElement('button', { onClick: () => window.location.reload() }, 'Reload Page')
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // ── localStorage persistence ──────────────────────────────────────────────
 const STORAGE_PREFIX = 'allstoreza_';
 
 function loadFromStorage(key, fallback) {
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX + key);
-    return raw ? JSON.parse(raw) : fallback;
+    if (raw) return JSON.parse(raw);
+    // If fallback is a function, call it to get the initial value
+    return typeof fallback === 'function' ? fallback() : fallback;
   } catch {
-    return fallback;
+    // If parse fails, use fallback (call if function)
+    return typeof fallback === 'function' ? fallback() : fallback;
   }
 }
 
@@ -69,6 +104,7 @@ const VTO_STATUS = {
   NO_ENDPOINT: 'no_endpoint', // Lambda URL not configured
 };
 
+export { ErrorBoundary };
 export default function App() {
   const [user] = useState(userProfile);
   const [activeCanvasUrl, setActiveCanvasUrl]   = useState(DEFAULT_AVATAR);
@@ -121,6 +157,17 @@ export default function App() {
   }, [vtoStatus]);
 
   // ── Try-on ────────────────────────────────────────────────────────────
+  
+  // Helper: add item only if not already selected
+  const addUniqueSelectedItem = useCallback((item) => {
+    setSelectedItems(cur => {
+      if (cur.some(x => x.id === item.id)) {
+        return cur;  // Already selected
+      }
+      return [...cur, item];
+    });
+  }, []);
+
   const handleTryOn = useCallback(async (item) => {
     // Toggle off
     if (selectedItems.some(x => x.id === item.id)) {
@@ -132,7 +179,7 @@ export default function App() {
 
     // No endpoint configured — go straight to overlay
     if (!endpoint) {
-      setSelectedItems(cur => [...cur, item]);
+      addUniqueSelectedItem(item);
       setVtoStatus(VTO_STATUS.NO_ENDPOINT);
       return;
     }
@@ -163,6 +210,10 @@ export default function App() {
           userImageUrl: userImageToSend,
           garmentImageUrl: item.productImageUrl || item.processedImageUrl,
           category: item.layerType,
+          // Additional metadata for debugging
+          garmentId: item.id,
+          garmentName: item.title,
+          storeSlug: item.storeSlug,
         }),
       });
 
@@ -175,15 +226,26 @@ export default function App() {
       console.log('TRYON RESPONSE:', data);
 
       if (data.success && data.outputUrl) {
-        // Real VTO result
-        setActiveCanvasUrl(data.outputUrl);
-        setSelectedItems(cur => [...cur, item]);
-        setVtoStatus(VTO_STATUS.SUCCESS);
+        // Verify image actually loads before declaring success
+        setLoadingStage('Rendering result…');
+        try {
+          await preloadImage(data.outputUrl);
+          // ✅ Image verified — it's real
+          setActiveCanvasUrl(data.outputUrl);
+          addUniqueSelectedItem(item);
+          setVtoStatus(VTO_STATUS.SUCCESS);
+        } catch (imgErr) {
+          // Image URL is broken — fall back to overlay
+          console.warn('VTO image failed to load:', imgErr.message);
+          addUniqueSelectedItem(item);
+          setVtoStatus(VTO_STATUS.FALLBACK);
+          setVtoError('Try-on processed but image unavailable. Showing preview instead.');
+        }
         setLoadingStage('Ready');
       } else {
         // Lambda returned an error
         console.warn('VTO error:', data.error || 'Unknown error');
-        setSelectedItems(cur => [...cur, item]);
+        addUniqueSelectedItem(item);
         setVtoStatus(VTO_STATUS.FAILED);
         setVtoError(data.error || 'Try-on service temporarily unavailable');
         setLoadingStage('Ready');
@@ -191,8 +253,8 @@ export default function App() {
     } catch (err) {
       console.warn('VTO request failed:', err.message);
       // Network error — use overlay fallback
-      setSelectedItems(cur => [...cur, item]);
-      setVtoStatus(VTO_STATUS.FAILED);
+      addUniqueSelectedItem(item);
+      setVtoStatus(VTO_STATUS.FALLBACK);
       setVtoError('Could not reach try-on service. Showing preview instead.');
       setLoadingStage('Ready');
     } finally {
@@ -326,13 +388,13 @@ export default function App() {
   // ── Derived ───────────────────────────────────────────────────────────
   const activeStoreItems = useMemo(() =>
     activeStoreId ? retailCatalog.filter(i => i.storeSlug === activeStoreId) : [],
-    [activeStoreId, retailCatalog]
+    [activeStoreId]
   );
 
   const visibleCatalog = useMemo(() => {
     const ids = new Set(stores.filter(s => s.active).map(s => s.id));
     return retailCatalog.filter(i => ids.has(i.storeSlug));
-  }, [stores, retailCatalog]);
+  }, [stores]);
 
   const cartCount = useMemo(() =>
     directCart.reduce((s, i) => s + i.qty, 0),
@@ -403,5 +465,15 @@ async function blobUrlToBase64(blobUrl) {
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(new Error('Failed to read uploaded image'));
     reader.readAsDataURL(blob);
+  });
+}
+
+// ── Utility: preload image to verify it loads successfully ─────────────────
+async function preloadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(url);
+    img.onerror = () => reject(new Error(`Image failed to load: ${url}`));
+    img.src = url;
   });
 }
